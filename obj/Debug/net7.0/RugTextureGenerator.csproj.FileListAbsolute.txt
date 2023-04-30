@@ -1,0 +1,15 @@
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.csproj.AssemblyReference.cache
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.GeneratedMSBuildEditorConfig.editorconfig
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.AssemblyInfoInputs.cache
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.AssemblyInfo.cs
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.csproj.CoreCompileInputs.cache
+/Users/rishit/src/repos/RugTextureGenerator/bin/Debug/net7.0/RugTextureGenerator
+/Users/rishit/src/repos/RugTextureGenerator/bin/Debug/net7.0/RugTextureGenerator.deps.json
+/Users/rishit/src/repos/RugTextureGenerator/bin/Debug/net7.0/RugTextureGenerator.runtimeconfig.json
+/Users/rishit/src/repos/RugTextureGenerator/bin/Debug/net7.0/RugTextureGenerator.dll
+/Users/rishit/src/repos/RugTextureGenerator/bin/Debug/net7.0/RugTextureGenerator.pdb
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.dll
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/refint/RugTextureGenerator.dll
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.pdb
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/RugTextureGenerator.genruntimeconfig.cache
+/Users/rishit/src/repos/RugTextureGenerator/obj/Debug/net7.0/ref/RugTextureGenerator.dll
