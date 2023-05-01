@@ -84,13 +84,21 @@ namespace RugTextureGenerator
                 string fetchedStr;
                 
                 Console.WriteLine($"{this.Config.APIUrl}/{x}");
-                
-                if ((fetchedStr = JsonSerializer.Deserialize<Hashtable>(this.WebClient.GetStreamAsync($"{this.Config.APIUrl}/{x}").Result)["data"].ToString()) == null)
+
+                try
+                {
+                    if ((fetchedStr = JsonSerializer.Deserialize<Hashtable>(this.WebClient.GetStreamAsync($"{this.Config.APIUrl}/{x}").Result)["data"].ToString()) == null)
+                        continue;
+                }
+                catch (NullReferenceException)
+                {
+                    Console.WriteLine("Null request response.");
+
                     continue;
+                }
 
                 fetchedHash = JsonSerializer.Deserialize<Hashtable>(fetchedStr);
-
-               
+              
                 Console.WriteLine($"{fetchedHash["productImages"].ToString()}");
 
                 JsonElement images;
@@ -116,9 +124,11 @@ namespace RugTextureGenerator
 
                 string[] splitArray = images[0].ToString().Split("/");
 
-                imageName = splitArray[splitArray.Length - 1]; 
+                imageName = splitArray[splitArray.Length - 1];
                 
-                if (this.Config.Processed.Contains(images[0].ToString()))
+                Console.WriteLine($"Processed Images: {this.Config.Processed.Count}");
+
+                if (Tools.LinearSearch(imageName, this.Config.Processed) != -1)
                 {
                     Console.WriteLine("Exists, continuing");
                     continue;
@@ -129,9 +139,10 @@ namespace RugTextureGenerator
                     Console.WriteLine($"Downloading {images[0]}");
                     wc.DownloadFile($"{this.Config.ImageSourceURL}/{imageName}", $"{ImageFetcher.ImagePath}/Dump/{imageName}");
                 }
+                
                 image = ImageTools.LoadImage($"{ImageFetcher.ImagePath}/Dump/{imageName}");
 
-                ImageTools.Crop(image, 160, 0, 495, 750).Save($"{ImageFetcher.ImagePath}/Textures/{fetchedHash["designName"].ToString()}.jpg");
+                ImageTools.Crop(image, 185, 10, 420, 650).Save($"{ImageFetcher.ImagePath}/Textures/{fetchedHash["designName"].ToString()}.jpg");
                 
                 this.Config.Processed.Add(fetchedImage); 
             }
