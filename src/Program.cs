@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Google.Cloud.Storage.V1;
 
 namespace RugTextureGenerator
 {
@@ -8,8 +9,10 @@ namespace RugTextureGenerator
         {
             ImageFetcher fetcher = new ImageFetcher("FetcherConfig.json", new Range(35, 2000));
             
-            fetcher.Fetch();
-            fetcher.Save();
+            // fetcher.Fetch();
+            // fetcher.Save();
+
+            fetcher.UploadImages();
         }
 
         public static void Main(string[] args)

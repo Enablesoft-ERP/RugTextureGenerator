@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Google.Cloud.Storage.V1;
 
 namespace RugTextureGenerator
 {
@@ -17,11 +18,13 @@ namespace RugTextureGenerator
 
         public string ImageSourceURL { get; set; }
 
+        public string ImageServerName { get; set; }
+        
         public List<string> Processed { get; set; }
 
         public bool IsNull() 
         {
-            return ((this.APIUrl == null || this.APIUrl.Length == 0) && (this.Processed == null || this.Processed.Count == 0));
+            return (String.IsNullOrEmpty(this.APIUrl) && (this.Processed == null || this.Processed.Count == 0) && String.IsNullOrEmpty(this.ImageServerName));
         }
         
         public static FetcherConfig LoadFromFile(string path)
@@ -65,6 +68,8 @@ namespace RugTextureGenerator
  
         public static string ImagePath = "Images";
 
+        public StorageClient ImageStorageClient;
+        
         public FetcherConfig Config;
 
         protected HttpClient WebClient;
@@ -72,6 +77,7 @@ namespace RugTextureGenerator
         protected WebClient Client;
 
         public Range IDRange;
+
         
         public void Fetch()
         {
@@ -153,6 +159,37 @@ namespace RugTextureGenerator
             this.Config.Save(this.ConfigPath); 
         }
 
+        protected string[] GetServerImageDump()
+        {
+            var objects = this.ImageStorageClient.ListObjects(this.Config.ImageServerName).ToArray();
+
+            string[] imageDump = new string[objects.Length], split;
+
+            for (int x = 0; x < objects.Length; x++)
+                imageDump[x] = (split = objects[x].Name.Split('/'))[split.Length - 1];
+
+            Array.Sort(imageDump);
+
+            return imageDump;
+        } 
+
+        public void UploadImages()
+        {
+            string[] dirList = Directory.GetFiles($"{ImageFetcher.ImagePath}/Textures"), imageDump = this.GetServerImageDump(), split;
+            
+            Console.WriteLine(JsonSerializer.Serialize(imageDump));
+            
+            for (int x = 0; x < dirList.Length; x++)
+                if ((split = dirList[x].Split('.'))[split.Length - 1] == "png" || split[split.Length - 1] == "jpg" && Tools.LinearSearch<string>((split = dirList[x].Split('/'))[split.Length - 1], imageDump) == -1)
+                    using (FileStream file = File.OpenRead($"{dirList[x]}"))
+                    {
+                        Console.WriteLine($"Uploading {split[split.Length - 1]}");
+                        this.ImageStorageClient.UploadObject(this.Config.ImageServerName,
+                            $"textures/{split[split.Length - 1]}",
+                            "image/jpeg", file);
+                    }
+        }
+
         public ImageFetcher(string path, Range range)
         {
             this.Config = FetcherConfig.LoadFromFile(path);
@@ -161,6 +198,7 @@ namespace RugTextureGenerator
             this.IDRange = range;
 
             this.WebClient = new HttpClient();
+            
             this.Client = new WebClient();
 
             if (!Directory.Exists(ImageFetcher.ImagePath))
@@ -170,6 +208,8 @@ namespace RugTextureGenerator
                 Directory.CreateDirectory($"{ImageFetcher.ImagePath}/Dump");
                 Directory.CreateDirectory($"{ImageFetcher.ImagePath}/Textures");
             }
+            this.ImageStorageClient = StorageClient.Create();
+            
         }
     }
 } 
