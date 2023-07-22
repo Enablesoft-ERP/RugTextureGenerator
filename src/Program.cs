@@ -1,19 +1,19 @@
-﻿using System.Net;
-using Google.Cloud.Storage.V1;
-
-namespace RugTextureGenerator
+﻿namespace RugTextureGenerator
 {
     public class Program
     {
+        
         public static void CreateTextures()
         {
-            ImageFetcher fetcher = new ImageFetcher("FetcherConfig.json", new Range(35, 2000));
+            ImageFetcher fetcher = new ImageFetcher("FetcherConfig.json");
             
-            // fetcher.Fetch();
-            // fetcher.Save();
+            fetcher.Fetch();
+            fetcher.Save();
 
             fetcher.UploadImages();
         }
+        
+        
 
         public static void Main(string[] args)
         {

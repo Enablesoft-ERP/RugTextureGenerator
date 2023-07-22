@@ -1,14 +1,11 @@
 using System.Collections;
-using System.Data.SqlTypes;
-using System.Diagnostics.Contracts;
 using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime.Serialization;
-using System.Runtime.Versioning;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Security.Cryptography;
+using System.Text.Json.Nodes;
 using Google.Cloud.Storage.V1;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace RugTextureGenerator
 {
@@ -76,65 +73,69 @@ namespace RugTextureGenerator
 
         protected WebClient Client;
 
-        public Range IDRange;
-
+        protected SHA256 ShaInstance;
         
+        protected string CheckSum;
+
+        protected Dictionary<string, string> ImageURLMap;
+
+        protected Dictionary<string, bool> ProccesedMap;
+
+        public void GetUrls()
+        {
+            List<string> urls = new List<string>(); 
+           
+            string fetchedStr;
+
+            if ((fetchedStr = JsonSerializer.Deserialize<Hashtable>(this.WebClient.GetStreamAsync($"{this.Config.APIUrl}/")
+                    .Result)["data"].ToString()) == null)
+            {
+                throw new Exception("Failed to fetch products.");
+            }
+            
+            List<Hashtable> fetchedHash = System.Text.Json.JsonSerializer.Deserialize<List<Hashtable>>(fetchedStr);
+
+            for (int x = 0; x < fetchedHash.Count; x++)
+            {
+                string url;
+                string[] split = (url = fetchedHash[x]["primePhoto"].ToString()).Split("/");
+            
+                if (split[split.Length - 1] != "no-image.png")
+                    if (!this.ImageURLMap.ContainsKey(url))
+                        this.ImageURLMap.Add(url, fetchedHash[x]["designName"].ToString());
+            } 
+        }
+
         public void Fetch()
         {
             Hashtable fetchedHash = null;
 
+            List<Hashtable> productList =  new List<Hashtable>();
+
             Image image = null;
+
+            Dictionary<string, string>.KeyCollection keys = this.ImageURLMap.Keys;
+
+            this.GetUrls();
             
-            for (int x = this.IDRange.Start.Value; x < this.IDRange.End.Value; x++)
+            foreach (string imageURL in keys)
             {
-                string fetchedStr;
-                
-                Console.WriteLine($"{this.Config.APIUrl}/{x}");
-
-                try
-                {
-                    if ((fetchedStr = JsonSerializer.Deserialize<Hashtable>(this.WebClient.GetStreamAsync($"{this.Config.APIUrl}/{x}").Result)["data"].ToString()) == null)
-                        continue;
-                }
-                catch (NullReferenceException)
-                {
-                    Console.WriteLine("Null request response.");
-
-                    continue;
-                }
-
-                fetchedHash = JsonSerializer.Deserialize<Hashtable>(fetchedStr);
-              
-                Console.WriteLine($"{fetchedHash["productImages"].ToString()}");
-
-                JsonElement images;
-
                 string fetchedImage = null, imageName = null;
+
+                string[] splitArray;
                 
-                if ((images = (JsonElement)fetchedHash["productImages"]).EnumerateArray().Count() == 0)
+                if ((imageName = (splitArray = imageURL.Split("/"))[splitArray.Length - 1]) == "no-image.png")
                 {
                     Console.WriteLine("Null images.");
-  
                     continue;
                 }
-                //
-                // JsonElement.ArrayEnumerator enumerator; 
-                //
-                // enumerator = images.EnumerateArray();
-                //
-                // enumerator.MoveNext();
-                //
-                // fetchedImage= enumerator.Current.ToString(); 
                
                 Console.WriteLine($"Retreived image path: {fetchedImage}");
 
-                string[] splitArray = images[0].ToString().Split("/");
-
-                imageName = splitArray[splitArray.Length - 1];
                 
                 Console.WriteLine($"Processed Images: {this.Config.Processed.Count}");
 
-                if (Tools.LinearSearch(imageName, this.Config.Processed) != -1)
+                if (this.ProccesedMap.ContainsKey(imageName))
                 {
                     Console.WriteLine("Exists, continuing");
                     continue;
@@ -142,21 +143,35 @@ namespace RugTextureGenerator
                 
                 using (WebClient wc = new WebClient())
                 {
-                    Console.WriteLine($"Downloading {images[0]}");
-                    wc.DownloadFile($"{this.Config.ImageSourceURL}/{imageName}", $"{ImageFetcher.ImagePath}/Dump/{imageName}");
+                    Console.WriteLine($"Downloading {imageURL}");
+                    wc.DownloadFile(imageURL, $"{ImageFetcher.ImagePath}/Dump/{imageName}");
                 }
                 
-                image = ImageTools.LoadImage($"{ImageFetcher.ImagePath}/Dump/{imageName}");
+                Console.WriteLine($"Loading {ImageFetcher.ImagePath}/Dump/{imageName}");
 
-                ImageTools.Crop(image, 185, 10, 420, 650).Save($"{ImageFetcher.ImagePath}/Textures/{fetchedHash["designName"].ToString()}.jpg");
+                image = ImageTools.LoadImage($"{ImageFetcher.ImagePath}/Dump/{imageName}");
+               
+                if (image == null)
+                {
+                    Console.WriteLine("Loaded image is null");
+                    
+                    continue;
+                }
                 
-                this.Config.Processed.Add(fetchedImage); 
-            }
+                ImageTools.Crop(image, 185, 10, 420, 650).Save($"{ImageFetcher.ImagePath}/Textures/{this.ImageURLMap[imageURL].ToString()}.jpg");
+                this.AddProcessed(imageName);
+            }  
         }
 
         public void Save()
         {
             this.Config.Save(this.ConfigPath); 
+        }
+
+        protected void AddProcessed(string imageName)
+        {
+            this.Config.Processed.Add(imageName);
+            this.ProccesedMap.Add(imageName, true);
         }
 
         protected string[] GetServerImageDump()
@@ -180,7 +195,7 @@ namespace RugTextureGenerator
             Console.WriteLine(JsonSerializer.Serialize(imageDump));
             
             for (int x = 0; x < dirList.Length; x++)
-                if ((split = dirList[x].Split('.'))[split.Length - 1] == "png" || split[split.Length - 1] == "jpg" && Tools.LinearSearch<string>((split = dirList[x].Split('/'))[split.Length - 1], imageDump) == -1)
+                 if ((split = dirList[x].Split('.'))[split.Length - 1] == "png" || split[split.Length - 1] == "jpg" && Tools.LinearSearch<string>((split = dirList[x].Split('/'))[split.Length - 1], imageDump) == -1)
                     using (FileStream file = File.OpenRead($"{dirList[x]}"))
                     {
                         Console.WriteLine($"Uploading {split[split.Length - 1]}");
@@ -190,12 +205,18 @@ namespace RugTextureGenerator
                     }
         }
 
-        public ImageFetcher(string path, Range range)
+        public void LoadProcessed()
+        {
+            for (int x = 0; x < this.Config.Processed.Count; x++)
+                if (this.Config.Processed[x] != null)
+                this.ProccesedMap.Add(this.Config.Processed[x], true);
+        }
+
+        public ImageFetcher(string path)
         {
             this.Config = FetcherConfig.LoadFromFile(path);
             
             this.ConfigPath = path;
-            this.IDRange = range;
 
             this.WebClient = new HttpClient();
             
@@ -204,12 +225,18 @@ namespace RugTextureGenerator
             if (!Directory.Exists(ImageFetcher.ImagePath))
             {
                 Directory.CreateDirectory(ImageFetcher.ImagePath);
-                
+
                 Directory.CreateDirectory($"{ImageFetcher.ImagePath}/Dump");
                 Directory.CreateDirectory($"{ImageFetcher.ImagePath}/Textures");
             }
-            this.ImageStorageClient = StorageClient.Create();
+
+            this.ImageURLMap = new Dictionary<string, string>();
+            this.ProccesedMap = new Dictionary<string, bool>();
             
+            this.ImageStorageClient = StorageClient.Create();
+            this.ShaInstance = SHA256.Create();
+            
+            this.LoadProcessed();
         }
     }
 } 
