@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Google.Cloud.Storage.V1;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace RugTextureGenerator

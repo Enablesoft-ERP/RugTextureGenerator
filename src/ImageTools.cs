@@ -1,4 +1,5 @@
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace RugTextureGenerator
 {
