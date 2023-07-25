@@ -124,7 +124,7 @@ namespace RugTextureGenerator
             
             foreach (string imageURL in keys)
             {
-                string fetchedImage = null, imageName = null;
+                string fetchedImage = null, imageName = null, imagePath;
 
                 string[] splitArray;
                 
@@ -139,21 +139,24 @@ namespace RugTextureGenerator
                 
                 Console.WriteLine($"Processed Images: {this.Config.Processed.Count}");
 
-                if (this.ProccesedMap.ContainsKey(imageURL))
+                imagePath = $"{ImageFetcher.ImagePath}/Dump/{imageName}";
+                
+                if (File.Exists(imagePath))
                 {
                     Console.WriteLine("Exists, continuing");
+                    this.AddProcessed(imageName);
                     continue;
                 }
                 
                 using (WebClient wc = new WebClient())
                 {
                     Console.WriteLine($"Downloading {imageURL}");
-                    wc.DownloadFile(imageURL, $"{ImageFetcher.ImagePath}/Dump/{imageName}");
+                    wc.DownloadFile(imageURL, imagePath);
                 }
                 
-                Console.WriteLine($"Loading {ImageFetcher.ImagePath}/Dump/{imageName}");
+                Console.WriteLine($"Loading {imagePath}");
 
-                image = ImageTools.LoadImage($"{ImageFetcher.ImagePath}/Dump/{imageName}");
+                image = ImageTools.LoadImage(imagePath);
                
                 if (image == null)
                 {
