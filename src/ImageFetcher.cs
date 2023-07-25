@@ -189,7 +189,8 @@ namespace RugTextureGenerator
         protected void AddProcessed(string imageName)
         {
             this.Config.Processed.Add(imageName);
-            this.ProccesedMap.Add(imageName, true);
+            if (!this.ProccesedMap.ContainsKey(imageName))
+                this.ProccesedMap.Add(imageName, true);
         }
 
         protected string[] GetServerImageDump()
