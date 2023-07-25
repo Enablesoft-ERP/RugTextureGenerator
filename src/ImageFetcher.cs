@@ -83,7 +83,7 @@ namespace RugTextureGenerator
 
         protected Dictionary<string, string> ImageURLMap;
 
-        protected Dictionary<string, bool> ProccesedMap;
+        protected Dictionary<string, bool> ProcessedMap;
 
         public void GetUrls()
         {
@@ -188,9 +188,11 @@ namespace RugTextureGenerator
 
         protected void AddProcessed(string imageName)
         {
-            this.Config.Processed.Add(imageName);
-            if (!this.ProccesedMap.ContainsKey(imageName))
-                this.ProccesedMap.Add(imageName, true);
+            if (!this.ProcessedMap.ContainsKey(imageName))
+            {
+                this.Config.Processed.Add(imageName);
+                this.ProcessedMap.Add(imageName, true);
+            }
         }
 
         protected string[] GetServerImageDump()
@@ -227,8 +229,11 @@ namespace RugTextureGenerator
         public void LoadProcessed()
         {
             for (int x = 0; x < this.Config.Processed.Count; x++)
-                if (this.Config.Processed[x] != null)
-                this.ProccesedMap.Add(this.Config.Processed[x], true);
+            {
+                string processed;
+                if ((processed = this.Config.Processed[x]) != null && !this.ProcessedMap.ContainsKey(processed))
+                    this.ProcessedMap.Add(this.Config.Processed[x], true);
+            }
         }
 
         public ImageFetcher(string path)
@@ -250,7 +255,7 @@ namespace RugTextureGenerator
             }
 
             this.ImageURLMap = new Dictionary<string, string>();
-            this.ProccesedMap = new Dictionary<string, bool>();
+            this.ProcessedMap = new Dictionary<string, bool>();
             
             this.ImageStorageClient = StorageClient.Create();
             this.ShaInstance = SHA256.Create();
