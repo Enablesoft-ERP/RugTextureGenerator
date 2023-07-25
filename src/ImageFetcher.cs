@@ -20,9 +20,11 @@ namespace RugTextureGenerator
         
         public List<string> Processed { get; set; }
 
+        public List<string> Failed { get; set; }
+
         public bool IsNull() 
         {
-            return (String.IsNullOrEmpty(this.APIUrl) && (this.Processed == null || this.Processed.Count == 0) && String.IsNullOrEmpty(this.ImageServerName));
+            return (String.IsNullOrEmpty(this.APIUrl) && (this.Processed == null || this.Processed.Count == 0) && (this.Failed == null || this.Failed.Count == 0) && String.IsNullOrEmpty(this.ImageServerName));
         }
         
         public static FetcherConfig LoadFromFile(string path)
@@ -48,11 +50,12 @@ namespace RugTextureGenerator
                 writer.Write(JsonSerializer.Serialize(config));
         }
 
-        public FetcherConfig(string apiURL, string imageSourceUrl, string[] processed)
+        public FetcherConfig(string apiURL, string imageSourceUrl, string[] processed, string[] failed = null)
         {
             this.APIUrl = apiURL;
             this.ImageSourceURL = imageSourceUrl;
             this.Processed = new List<string>();
+            this.Failed = new List<string>();
 
             for (int x = 0; x < processed.Length; x++)
                 this.Processed.Add(processed[x]);
@@ -136,7 +139,7 @@ namespace RugTextureGenerator
                 
                 Console.WriteLine($"Processed Images: {this.Config.Processed.Count}");
 
-                if (this.ProccesedMap.ContainsKey(imageName))
+                if (this.ProccesedMap.ContainsKey(imageURL))
                 {
                     Console.WriteLine("Exists, continuing");
                     continue;
@@ -158,8 +161,19 @@ namespace RugTextureGenerator
                     
                     continue;
                 }
+
+                try
+                {
+                    ImageTools.Crop(image, 185, 10, 420, 650).Save($"{ImageFetcher.ImagePath}/Textures/{this.ImageURLMap[imageURL].ToString()}.jpg");
+                }
+                catch (Exception e)
+                {
+                    if (this.Config.Failed.IndexOf(imageName) < 0)
+                        this.Config.Failed.Add(imageName); 
+                    
+                    continue;
+                }
                 
-                ImageTools.Crop(image, 185, 10, 420, 650).Save($"{ImageFetcher.ImagePath}/Textures/{this.ImageURLMap[imageURL].ToString()}.jpg");
                 this.AddProcessed(imageName);
             }  
         }
